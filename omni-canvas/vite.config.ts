@@ -30,8 +30,19 @@ export default defineConfig({
     })
   ],
   server: {
+    host: '0.0.0.0',
+    port: 5173,
+    // Proxy LFM inference through Vite so the phone browser can reach the
+    // SSH-tunneled LFM engine (127.0.0.1:8081) via the NetBird interface.
+    proxy: {
+      '/v1': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        rewrite: (path) => path // pass /v1/... as-is to LFM
+      }
+    },
     fs: {
-      // Allow imports that resolve above the omni-canvas/ root (convex/_generated)
+      // Allow imports that resolve above omni-canvas/ root (convex/_generated)
       allow: ['..']
     }
   }
