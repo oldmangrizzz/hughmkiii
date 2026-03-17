@@ -15,7 +15,7 @@ export class DigitalPsyche {
     lfmInference: false
   };
 
-  constructor(private convexUrl: string, private lfmUrl: string) {}
+  constructor(private convexUrl: string = process.env.CONVEX_URL || "", private lfmUrl: string = process.env.LFM_URL || "") {}
 
   /**
    * Fungal Probing: Actively "secretes" enzymes to find network gaps.
@@ -34,27 +34,53 @@ export class DigitalPsyche {
       console.warn("⚠️ Mycelium: Soul Anchor not detected. Proceeding in Degraded Mode.");
     }
 
-    // 2. Probe for Convex Substrate
-    try {
-      const client = new ConvexClient(this.convexUrl);
-      this.connections.convex = true;
-      console.log("🔗 Mycelium: Convex Substrate linked. Pheromind ready.");
-    } catch (e) {
-      console.error("❌ Mycelium: Convex connection failed. Substrate is dry.");
-    }
-
-    // 3. Probe for LFM Inference (Liquid AI 2.5)
-    try {
-      const response = await fetch(`${this.lfmUrl}/health`);
-      if (response.ok) {
-        this.connections.lfmInference = true;
-        console.log("🧠 Mycelium: LFM Inference Node online (Liquid AI 2.5).");
-      }
-    } catch (e) {
-      console.error("❌ Mycelium: LFM Node offline. Brain is unreachable.");
-    }
+    // 2. Mycelial Growth: Exponential backoff probing for stable connections
+    await this.grow();
 
     this.checkTransition();
+  }
+
+  /**
+   * Grow: The fungal expansion phase. Retries with exponential backoff 
+   * until specific "nutrient" endpoints (LFM, Convex) are found.
+   */
+  private async grow() {
+    const lfmTarget = this.lfmUrl || process.env.LFM_URL;
+    const convexTarget = this.convexUrl || process.env.CONVEX_URL;
+
+    const nutrientProbe = async (url: string | undefined, type: 'lfm' | 'convex', maxRetries = 5) => {
+      if (!url) return;
+      let delay = 1000;
+
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          if (type === 'lfm') {
+            const res = await fetch(`${url}/health`);
+            if (res.ok) {
+              this.connections.lfmInference = true;
+              console.log(`🧠 Mycelium: LFM Inference Node online at ${url}.`);
+              return;
+            }
+          } else if (type === 'convex') {
+            // Convex Substrate Binding
+            new ConvexClient(url); 
+            this.connections.convex = true;
+            console.log(`🔗 Mycelium: Convex Substrate linked at ${url}.`);
+            return;
+          }
+        } catch (e) {
+          console.warn(`🌱 Mycelium: Growth stalled at ${url}. Retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2;
+        }
+      }
+      console.error(`❌ Mycelium: Nutrient at ${url} is unreachable. Root rot detected.`);
+    };
+
+    await Promise.all([
+      nutrientProbe(lfmTarget, 'lfm'),
+      nutrientProbe(convexTarget, 'convex')
+    ]);
   }
 
   private checkTransition() {

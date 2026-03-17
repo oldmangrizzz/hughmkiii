@@ -1,39 +1,67 @@
 // src/interleaver/bridge.test.ts
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { interleave } from "./bridge";
 
 /**
- * Interleaver Bridge Tests
- * Verifies that H.U.G.H. can correctly fuse memories and semantic facts.
+ * Interleaver Bridge Tests (v2.0 Substrate Edition)
  */
 
-const mock = new MockAdapter(axios);
+// Mock the generated API module
+jest.mock("../../convex/_generated/api", () => ({
+  api: {
+    pheromones: {
+      searchKnowledge: "pheromones:searchKnowledge",
+      heartbeatAgent: "pheromones:heartbeatAgent"
+    }
+  }
+}), { virtual: true });
 
 describe("Interleaver Bridge", () => {
-  afterEach(() => {
-    mock.reset();
+  const mockHormones = { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
+  const mockPheromones = [{ type: "visual", intent: "idle", weight: 0.8 }] as any;
+
+  // Mock Convex Client with minimal necessary implementation
+  const createMockClient = (results: any[]) => ({
+    query: jest.fn().mockResolvedValue(results),
+    mutation: jest.fn().mockResolvedValue(true)
+  } as any);
+
+  it("should assemble context from the substrate knowledge base", async () => {
+    const mockData = [
+      { category: 'memory', title: 'User Memory', content: 'Met Architect in 2022' },
+      { category: 'fact', title: 'EMS Protocol', content: 'Grit Highland origin' }
+    ];
+    
+    const client = createMockClient(mockData);
+    const ctx = await interleave("test query", mockHormones, mockPheromones, client);
+
+    expect(ctx.relationalHistory).toContain("User Memory: Met Architect in 2022");
+    expect(ctx.semanticFacts).toContain("EMS Protocol: Grit Highland origin");
+    expect(client.query).toHaveBeenCalled();
   });
 
-  it("should assemble context from MemGPT and Cognee", async () => {
-    mock.onPost(/.*\/search/).reply(200, { results: ["relational node"] });
-    mock.onPost(/.*\/explore/).reply(200, { nodes: ["semantic node"] });
+  it("should partition history and facts correctly", async () => {
+    const mockData = [
+      { category: 'relational', title: 'History', content: 'Node A' },
+      { category: 'graph', title: 'Graph', content: 'Node B' }
+    ];
 
-    const hormones = { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
-    const ctx = await interleave("test query", hormones, []);
+    const client = createMockClient(mockData);
+    const ctx = await interleave("test query", mockHormones, mockPheromones, client);
 
-    expect(ctx.relationalHistory).toContain("relational node");
-    expect(ctx.semanticFacts).toContain("semantic node");
+    expect(ctx.relationalHistory).toEqual(["History: Node A"]);
+    expect(ctx.semanticFacts).toEqual(["Graph: Node B"]);
   });
 
-  it("should handle service failures gracefully", async () => {
-    mock.onPost(/.*\/search/).networkError();
-    mock.onPost(/.*\/explore/).reply(500);
+  it("should handle substrate failures gracefully", async () => {
+    const client = {
+      query: jest.fn().mockRejectedValue(new Error("Substrate dry")),
+      mutation: jest.fn()
+    } as any;
 
-    const hormones = { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
-    const ctx = await interleave("test query", hormones, []);
+    const ctx = await interleave("test query", mockHormones, mockPheromones, client);
 
     expect(ctx.relationalHistory).toEqual([]);
     expect(ctx.semanticFacts).toEqual([]);
+    expect(ctx.hormones).toEqual(mockHormones);
   });
 });

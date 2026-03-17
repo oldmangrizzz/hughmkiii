@@ -1,37 +1,55 @@
 // src/interleaver/bridge.ts
-import axios from "axios";
+import { ConvexClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
 import { ThinkingContext, Hormones, Pheromone } from "../sidecar/types";
 
 /**
- * Interleaver Bridge
- * The Mycelial connector that fuses long-term memory (MemGPT) and semantic graphs (Cognee)
+ * Interleaver Bridge (v2.0)
+ * The Mycelial connector that fuses long-term memory and semantic graphs
  * into a single holographic context for H.U.G.H.'s thinking cycles.
+ * 
+ * FIX: Removed 'telepathy' (direct axios calls). Now queries the substrate.
+ * FIX: Implemented 'Hormonal Resonance' for context prioritization.
  */
 
 export const interleave = async (
   query: string, 
   hormones: Hormones, 
-  pheromones: Pheromone[]
+  pheromones: Pheromone[],
+  client: ConvexClient
 ): Promise<ThinkingContext> => {
   try {
-    const memgptUrl = process.env.MEMGPT_URL || "http://kvm4:8080/api";
-    const cogneeUrl = process.env.COGNEE_URL || "http://kvm2:8000/api";
+    // 1. Hormonal Resonance: Shift focus if cortisol is high (Emergency/Tactical bias)
+    const categoryFilter = hormones.cortisol > 0.5 ? 'tactical' : undefined;
 
-    const [memgptRes, cogneeRes] = await Promise.all([
-      axios.post(`${memgptUrl}/search`, { query }).catch(err => {
-        console.warn("MemGPT bridge failure:", err.message);
-        return { data: { results: [] } };
-      }),
-      axios.post(`${cogneeUrl}/explore`, { query }).catch(err => {
-        console.warn("Cognee bridge failure:", err.message);
-        return { data: { nodes: [] } };
-      })
-    ]);
+    // 2. Query the stigmergic substrate for relevant knowledge
+    const knowledgeEntries = await client.query(api.pheromones.searchKnowledge, {
+      limit: 10,
+      category: categoryFilter
+    });
+
+    // 3. Partition entries into history and facts
+    const relationalHistory = knowledgeEntries
+      .filter(e => e.category === 'memory' || e.category === 'relational')
+      .map(e => `${e.title}: ${e.content}`);
+
+    const semanticFacts = knowledgeEntries
+      .filter(e => e.category === 'graph' || e.category === 'fact' || e.category === 'tactical')
+      .map(e => `${e.title}: ${e.content}`);
+
+    // 4. Roger Protocol: Audit the context assembly event
+    await client.mutation(api.pheromones.auditPheromone, {
+      emitterId: "interleaver-bridge",
+      type: "context_assembly",
+      intent: "think",
+      accepted: true,
+      timestamp: Date.now()
+    });
 
     return {
       pheromones,
-      relationalHistory: memgptRes.data.results || [],
-      semanticFacts: cogneeRes.data.nodes || [],
+      relationalHistory,
+      semanticFacts,
       hormones
     };
   } catch (e) {

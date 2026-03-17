@@ -84,3 +84,55 @@ export const getActiveSomatic = query({
       .collect();
   },
 });
+
+/**
+ * Query: Search the knowledge base for relevant context.
+ * This replaces the direct API calls to Cognee/MemGPT.
+ */
+export const searchKnowledge = query({
+  args: { 
+    category: v.optional(v.string()),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    let q = ctx.db.query("knowledge_base");
+    if (args.category) {
+      q = q.withIndex("by_category", (idx) => idx.eq("category", args.category!));
+    }
+    return await q.order("desc").take(args.limit || 5);
+  },
+});
+
+/**
+ * Mutation: Register or heartbeat an agent.
+ */
+export const heartbeatAgent = mutation({
+  args: {
+    agentId: v.string(),
+    agentType: v.string(),
+    hostname: v.optional(v.string()),
+    publicKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("agent_registry")
+      .withIndex("by_agent_id", (q) => q.eq("agentId", args.agentId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        lastSeen: Date.now(),
+        isActive: true,
+      });
+    } else {
+      await ctx.db.insert("agent_registry", {
+        agentId: args.agentId,
+        agentType: args.agentType as any,
+        hostname: args.hostname,
+        publicKey: args.publicKey,
+        lastSeen: Date.now(),
+        isActive: true,
+      });
+    }
+  },
+});

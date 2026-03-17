@@ -51,59 +51,67 @@ export const useVoiceToCanvas = () => {
   const runFullChain = async (audioBlob: Blob) => {
     console.log("🚀 Running OmniCanvas Inference Chain...");
     
-    // Convert blob to base64 for transmission
-    const reader = new FileReader();
-    reader.readAsDataURL(audioBlob);
-    reader.onloadend = async () => {
-      const base64Audio = (reader.result as string).split(',')[1];
+    return new Promise<void>((resolve, reject) => {
+      // Convert blob to base64 for transmission
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        const base64Audio = (reader.result as string).split(',')[1];
 
-      try {
-        // FIX: Ensuring LFM_URL doesn't have double /v1
-        const baseUrl = process.env.LFM_URL!.endsWith('/v1') 
-          ? process.env.LFM_URL 
-          : `${process.env.LFM_URL}/v1`;
+        try {
+          // FIX: Ensuring LFM_URL doesn't have double /v1
+          const baseUrl = process.env.LFM_URL!.endsWith('/v1') 
+            ? process.env.LFM_URL 
+            : `${process.env.LFM_URL}/v1`;
 
-        const response = await axios.post(`${baseUrl}/audio/completions`, {
-          model: "lfm-2.5-audio",
-          // FIX: Use 'input' field instead of 'text' as per LFM 2.5 spec
-          input: base64Audio,
-          response_format: "json"
-        });
+          const response = await axios.post(`${baseUrl}/audio/completions`, {
+            model: "lfm-2.5-audio",
+            // FIX: Use 'input' field instead of 'text' as per LFM 2.5 spec
+            input: base64Audio,
+            response_format: "json"
+          });
 
-        const result = response.data;
-        console.log("🧠 Inference Result:", result);
+          const result = response.data;
+          console.log("🧠 Inference Result:", result);
 
-        // FIX: Verify Mapbox state if intent is spatial
-        if (result.intent === 'spatial_search' && !process.env.MAPBOX_TOKEN) {
-          console.warn("🗺️ Mapbox Token missing. Spatial rendering will be degraded.");
+          // FIX: Verify Mapbox state if intent is spatial
+          if (result.intent === 'spatial_search' && !process.env.MAPBOX_TOKEN) {
+            console.warn("🗺️ Mapbox Token missing. Spatial rendering will be degraded.");
+          }
+
+          // FUNGAL FIX: Trigger the sidecar thinking loop by sending the transcription to messages
+          await sendMessage({
+            content: result.transcription,
+            role: "user"
+          });
+
+          // Drop the Audio Pheromone into the Convex Substrate
+          // FIX: Adding position and weight as required by schema
+          await emitAudio({
+            intent: result.intent,
+            transcription: result.transcription,
+            confidence: result.confidence,
+            position: { x: 0.5, y: 0.5, z: 0.0 }, // Central focus
+            weight: 1.0,
+            ttlMs: 5000,
+            emitterSignature: "omni-canvas-client-dev",
+            emitterId: "operator-voice-portal"
+          });
+
+          // SOMATIC FEEDBACK: Emit pheromone for successful inference
+          // This closes the "HOTLDashboard empty" bug by ensuring data flows.
+          console.log("🦋 Emitting somatic pulse for successful inference...");
+          resolve();
+        } catch (err) {
+          console.error("❌ Inference Pipeline Error:", err);
+          reject(err);
         }
-
-        // FUNGAL FIX: Trigger the sidecar thinking loop by sending the transcription to messages
-        await sendMessage({
-          content: result.transcription,
-          role: "user"
-        });
-
-        // Drop the Audio Pheromone into the Convex Substrate
-        // FIX: Adding position and weight as required by schema
-        await emitAudio({
-          intent: result.intent,
-          transcription: result.transcription,
-          confidence: result.confidence,
-          position: { x: 0.5, y: 0.5, z: 0.0 }, // Central focus
-          weight: 1.0,
-          ttlMs: 5000,
-          emitterSignature: "omni-canvas-client-dev",
-          emitterId: "operator-voice-portal"
-        });
-
-        // SOMATIC FEEDBACK: Emit pheromone for successful inference
-        // This closes the "HOTLDashboard empty" bug by ensuring data flows.
-        console.log("🦋 Emitting somatic pulse for successful inference...");
-      } catch (err) {
-        console.error("❌ Inference Pipeline Error:", err);
-      }
-    };
+      };
+      reader.onerror = () => {
+        console.error("❌ FileReader Error");
+        reject(new Error("FileReader failed"));
+      };
+    });
   };
 
   return { isRecording, startRecording, stopRecording };

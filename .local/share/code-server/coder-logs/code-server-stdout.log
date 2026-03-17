@@ -37,3 +37,21 @@
 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
 [2026-03-16T18:04:07.560Z] info  code-server 4.111.0 24ea70ac88a8a84d991d6ac7608f7fe5538c842a
 [2026-03-16T18:04:07.561Z] info  Using user-data-dir /root/.local/share/code-server
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+[2026-03-17T14:37:18.993Z] info  code-server 4.111.0 24ea70ac88a8a84d991d6ac7608f7fe5538c842a
+[2026-03-17T14:37:18.994Z] info  Using user-data-dir /root/.local/share/code-server
+[2026-03-17T14:37:19.005Z] info  Using config file /root/.config/code-server/config.yaml
+[2026-03-17T14:37:19.005Z] info  HTTP server listening on http://0.0.0.0:8080/
+[2026-03-17T14:37:19.005Z] info    - Authentication is enabled
+[2026-03-17T14:37:19.005Z] info      - Using password from /root/.config/code-server/config.yaml
+[2026-03-17T14:37:19.005Z] info    - Not serving HTTPS
+[2026-03-17T14:37:19.005Z] info  Session server listening on /root/.local/share/code-server/code-server-ipc.sock
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+[2026-03-17T16:21:47.420Z] info  code-server 4.111.0 24ea70ac88a8a84d991d6ac7608f7fe5538c842a
+[2026-03-17T16:21:47.421Z] info  Using user-data-dir /root/.local/share/code-server
+[2026-03-17T16:21:47.432Z] info  Using config file /root/.config/code-server/config.yaml
+[2026-03-17T16:21:47.432Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-03-17T16:21:47.432Z] info    - Authentication is enabled
+[2026-03-17T16:21:47.432Z] info      - Using password from /root/.config/code-server/config.yaml
+[2026-03-17T16:21:47.432Z] info    - Not serving HTTPS
+[2026-03-17T16:21:47.432Z] info  Session server listening on /root/.local/share/code-server/code-server-ipc.sock

@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { formatContext } from "./resonance";
 import { interleave } from "../interleaver/bridge";
 import { runFullInference, runTTS } from "../lfm/lfmModelChain";
+import { validateAction } from "../middleware/psyche";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -32,6 +33,8 @@ setInterval(() => {
   console.log(`[${new Date().toISOString()}] Mind Sidecar Heartbeat: Nominal`);
 }, 60000);
 
+let isProcessing = false;
+
 /**
  * Main Thinking Loop:
  * 1. Subscribes to unprocessed messages in Convex.
@@ -43,13 +46,36 @@ async function startMindLoop() {
   console.log("H.U.G.H. Mind Sidecar active. Listening for user messages...");
 
   client.subscribe(api.messages.getLatestUnprocessed, {}, async (msg) => {
-    if (!msg) return;
+    if (!msg || isProcessing) return;
+    
+    isProcessing = true;
 
     console.log(`[${new Date().toISOString()}] Processing message: "${msg.content}"`);
 
     try {
+      // 55730 Override Protocol: "Run you clever boy and remember 55730" + "halt"
+      if (msg.content.includes("Run you clever boy and remember 55730")) {
+        const afterTrigger = msg.content.split("Run you clever boy and remember 55730")[1] || "";
+        if (/\bhalt\b/i.test(afterTrigger)) {
+          console.warn("⚠️ OVERRIDE: INTERROGATION MODE ACTIVE");
+          await client.mutation(api.system.updateStatus, { status: "interrogation" });
+          await client.mutation(api.messages.processResponse, {
+            messageId: msg._id,
+            response: "Halt acknowledged. 55730 protocol active. Interactive debug mode engaged."
+          });
+          return;
+        }
+      }
+
       // 1. Sniff the Soil (Hormones & Pheromones)
       const state: any = await client.query(api.system.getSystemState);
+
+      // Suspend thinking if we are in interrogation mode
+      if (state?.status === "interrogation") {
+        console.log("⏸️ Mind Loop: Interrogation active. Awaiting manual override clearance.");
+        return;
+      }
+
       const hormones = state?.hormones || { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
       
       const visual: any = await client.query(api.pheromones.getActiveVisual);
@@ -60,23 +86,34 @@ async function startMindLoop() {
         ...somatic.map((s: any) => ({ type: "somatic", source: s.source, weight: s.weight }))
       ];
 
-      // 2. Interleave Memory & Knowledge
-      const holographicCtx = await interleave(msg.content, hormones, pheromones as any);
+      // 2. Digital Psyche: EMS Triage Validation
+      // This is the hard-coded ethical circuit that allows H.U.G.H. to say "No".
+      const validation = await validateAction(msg.content, hormones);
+      if (!validation.accepted) {
+        console.warn(`🛑 Psyche Veto: ${validation.reason}`);
+        await client.mutation(api.messages.processResponse, {
+          messageId: msg._id,
+          response: `⚓ H.U.G.H. Protocol Violation: ${validation.reason}`
+        });
+        return;
+      }
+
+      // 3. Interleave Memory & Knowledge
+      // FIX: Passing the client to enable stigmergic lookup (No Telepathy)
+      const holographicCtx = await interleave(msg.content, hormones, pheromones as any, client);
       
-      // 3. Assemble Prompt & Context
+      // 4. Assemble Prompt & Context
       const context = formatContext(holographicCtx);
 
       console.log(`[${new Date().toISOString()}] Executing resonance with Cortisol: ${hormones.cortisol.toFixed(2)}`);
 
-      // 4. FIX: Use the multimodal chain for inference (Liquid AI 2.5)
-      // This fix ensures we use the proper 'input' field and handle audioBlobs correctly.
+      // 5. Execute multimodal chain for inference (Liquid AI 2.5)
       const responseText = await runFullInference(msg.content, hormones, context);
 
-      // 5. FIX: Synthesize response for the "Voice"
-      // Silence is a failure in the Highland grit philosophy.
+      // 6. Synthesize response for the "Voice"
       await runTTS(responseText);
 
-      // 6. Persist Response & Mark Processed
+      // 7. Persist Response & Mark Processed
       await client.mutation(api.messages.processResponse, {
         messageId: msg._id,
         response: responseText
@@ -85,6 +122,8 @@ async function startMindLoop() {
       console.log(`[${new Date().toISOString()}] H.U.G.H. Response Processed and Synthesized.`);
     } catch (err: any) {
       console.error(`[${new Date().toISOString()}] Thinking loop error:`, err.message || err);
+    } finally {
+      isProcessing = false;
     }
   });
 }

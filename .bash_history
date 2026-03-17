@@ -93,3 +93,25 @@ gh auth login
 gemini
 gemini
 gemini
+netbird up
+nano 031720260600crashlog.md
+nano 031720260600crashlog.md
+gemini
+export PATH=$PATH:$(npm config get prefix)/bin
+gemini
+cd '/'
+nano crash2.md
+reboot
+nano 031720260930crash.md
+gemini
+export PATH=$PATH:$(npm config get prefix)/bin
+gemini
+gemini
+ls -a
+clear
+apt install tree
+clear
+tree -a
+nano heylook.md
+nano byebyegemini.md
+gemini

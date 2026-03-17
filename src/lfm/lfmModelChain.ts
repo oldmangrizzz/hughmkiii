@@ -20,7 +20,11 @@ import { getInferenceParams } from './modulator';
 export const runFullInference = async (query: string, hormones: Hormones, context: string) => {
   console.log("🧠 LFM: Running Full Inference Chain...");
   
-  const response = await axios.post(`${process.env.LFM_URL}/chat/completions`, {
+  const baseUrl = process.env.LFM_URL!.endsWith('/v1') 
+    ? process.env.LFM_URL 
+    : `${process.env.LFM_URL}/v1`;
+
+  const response = await axios.post(`${baseUrl}/chat/completions`, {
     model: "lfm-2.5-thinking",
     messages: [
       { role: "system", content: context },
@@ -39,8 +43,12 @@ export const runFullInference = async (query: string, hormones: Hormones, contex
 export const runTTS = async (text: string) => {
   console.log("🗣️ LFM: Synthesizing speech...");
   
+  const baseUrl = process.env.LFM_URL!.endsWith('/v1') 
+    ? process.env.LFM_URL 
+    : `${process.env.LFM_URL}/v1`;
+
   try {
-    const response = await axios.post(`${process.env.LFM_URL}/audio/speech`, {
+    const response = await axios.post(`${baseUrl}/audio/speech`, {
       model: "lfm-2.5-tts",
       // FIX: Single field name mismatch corrected here
       input: text, 
