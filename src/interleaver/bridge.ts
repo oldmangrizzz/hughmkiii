@@ -2,6 +2,12 @@
 import axios from "axios";
 import { ThinkingContext, Hormones, Pheromone } from "../sidecar/types";
 
+/**
+ * Interleaver Bridge
+ * The Mycelial connector that fuses long-term memory (MemGPT) and semantic graphs (Cognee)
+ * into a single holographic context for H.U.G.H.'s thinking cycles.
+ */
+
 export const interleave = async (
   query: string, 
   hormones: Hormones, 

@@ -1,4 +1,9 @@
 // src/sidecar/types.ts
+/**
+ * PROJECT H.U.G.H. Core Types
+ * Defines the structural sinew of the holographic nervous system.
+ */
+
 export type Hormones = { 
   cortisol: number; 
   dopamine: number; 

@@ -3,6 +3,11 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { interleave } from "./bridge";
 
+/**
+ * Interleaver Bridge Tests
+ * Verifies that H.U.G.H. can correctly fuse memories and semantic facts.
+ */
+
 const mock = new MockAdapter(axios);
 
 describe("Interleaver Bridge", () => {
