@@ -1,0 +1,14 @@
+[2026-03-16 05:47:10] [INFO] Setting up Container OS
+[2026-03-16 05:47:10] [OK] Set up Container OS
+[2026-03-16 05:47:10] [OK] Network Connected: 192.168.7.152 fda1:371c:920c:cf4d:be24:11ff:fea3:5475 2600:1700:27a0:726f:be24:11ff:fea3:5475 fdce:9ff6:e45:1:be24:11ff:fea3:5475 
+[2026-03-16 05:47:11] [OK] IPv4 Internet Connected
+[2026-03-16 05:47:11] [OK] IPv6 Internet Connected
+[2026-03-16 05:47:11] [OK] Git DNS: github.com:(✔️ ) raw.githubusercontent.com:(✔️ ) api.github.com:(✔️ ) git.community-scripts.org:(✔️ )
+[2026-03-16 05:47:11] [INFO] Updating Container OS
+Hit:1 http://security.debian.org trixie-security InRelease
+Hit:2 http://deb.debian.org/debian trixie InRelease
+Hit:3 http://deb.debian.org/debian trixie-updates InRelease
+Reading package lists...
+[2026-03-16 05:48:46] [OK] Updated Container OS
+[2026-03-16 05:48:46] [INFO] Cleaning up
+[2026-03-16 05:48:47] [OK] Cleaned
