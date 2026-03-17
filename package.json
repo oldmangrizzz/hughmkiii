@@ -1,16 +1,16 @@
 {
-  "name": "phase-1-soil",
+  "name": "hugh-nervous-system",
   "version": "1.0.0",
   "main": "index.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "convex dev",
+    "build": "tsc",
+    "test": "jest",
+    "start:sidecar": "node dist/sidecar/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@types/jest": "^30.0.0",
     "axios": "^1.13.6",

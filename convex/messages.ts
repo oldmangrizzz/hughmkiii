@@ -2,15 +2,30 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const insert = mutation({
+/**
+ * H.U.G.H. Core Messaging Engine.
+ * 
+ * Grizzly Medicine: Every message is a ripple in the fungal substrate.
+ * We prioritize 'send' as the primary interface for triggering the mind loop.
+ */
+export const send = mutation({
   args: { role: v.string(), content: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db.insert("messages", {
       role: args.role as any,
       content: args.content,
       timestamp: Date.now(),
-      processed: false,
+      processed: args.role === 'assistant', // Assistant responses are already "processed"
     });
+  },
+});
+
+export const getRecent = query({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("messages")
+      .order("desc")
+      .take(50);
   },
 });
 
