@@ -1,0 +1,41 @@
+// convex/messages.ts
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const insert = mutation({
+  args: { role: v.string(), content: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("messages", {
+      role: args.role as any,
+      content: args.content,
+      timestamp: Date.now(),
+      processed: false,
+    });
+  },
+});
+
+export const getLatestUnprocessed = query({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("messages")
+      .withIndex("by_processed", (q) => q.eq("processed", false))
+      .order("asc") // FIFO: process the oldest unprocessed message first
+      .first();
+  },
+});
+
+export const processResponse = mutation({
+  args: { messageId: v.id("messages"), response: v.string() },
+  handler: async (ctx, args) => {
+    // Mark the user message as processed
+    await ctx.db.patch(args.messageId, { processed: true });
+    
+    // Insert the assistant's response
+    await ctx.db.insert("messages", {
+      role: "assistant",
+      content: args.response,
+      timestamp: Date.now(),
+      processed: true, // Assistant responses don't need further processing by the sidecar
+    });
+  },
+});

@@ -1,6 +1,12 @@
 // convex/system.ts
-import { mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+
+export const getSystemState = query({
+  handler: async (ctx) => {
+    return await ctx.db.query("system_state").first();
+  },
+});
 
 export const pulse = internalMutation({
   handler: async (ctx) => {

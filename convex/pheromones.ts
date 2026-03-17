@@ -74,3 +74,13 @@ export const getActiveVisual = query({
       .collect();
   },
 });
+
+export const getActiveSomatic = query({
+  handler: async (ctx) => {
+    const now = Date.now();
+    return await ctx.db
+      .query("somatic_pheromones")
+      .withIndex("by_expiration", (q) => q.gt("expiresAt", now))
+      .collect();
+  },
+});
