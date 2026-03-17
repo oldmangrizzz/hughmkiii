@@ -1,0 +1,1 @@
+/tmp/gemini-extensionsCXNwk/GEMINI.md

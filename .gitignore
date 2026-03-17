@@ -1,0 +1,13 @@
+node_modules
+.env
+.cache
+.npm
+.ssh
+.superpowers/brainstorm/*/node_modules
+.worktrees
+worktrees
+.gemini/oauth_creds.json
+.gemini/google_accounts.json
+.env
+.config/gh/hosts.yml
+.gemini/tmp/

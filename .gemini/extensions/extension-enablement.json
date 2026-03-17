@@ -1,0 +1,92 @@
+{
+  "superpowers": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "context7": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "github": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "mcp-toolbox-for-databases": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "conductor": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "mcp-neo4j": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "gemini-cli-security": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "google-workspace": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "code-review": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "pickle-rick": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "flutter": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "gemini-cli-jules": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "Stitch": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "gemini-kit": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "ralph": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "genkit": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "google-workspace-developer-tools": {
+    "overrides": [
+      "/root/*"
+    ]
+  },
+  "ComputerUse": {
+    "overrides": [
+      "/root/*"
+    ]
+  }
+}
