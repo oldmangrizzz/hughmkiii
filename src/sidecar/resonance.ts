@@ -4,6 +4,8 @@ import { ThinkingContext } from "./types";
 /**
  * Formats the holographic context into a system prompt block.
  * Interleaves pheromones, relational history, and semantic facts.
+ * 
+ * Grizzly Medicine: We don't just dump data; we structure the engram.
  */
 export const formatContext = (ctx: ThinkingContext): string => {
   const pheromones = ctx.pheromones

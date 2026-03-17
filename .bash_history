@@ -89,3 +89,7 @@ clear
 cat docs/superpowers/specs/2026-03-16-hugh-first-breath-design.md
 clear
 cat docs/superpowers/specs/2026-03-16-hugh-first-breath-design.md
+gh auth login
+gemini
+gemini
+gemini

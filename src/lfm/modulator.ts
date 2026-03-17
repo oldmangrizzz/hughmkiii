@@ -11,6 +11,8 @@ export interface InferenceParams {
 
 /**
  * Modulates LFM 2.5 inference parameters based on synthetic endocrinology.
+ * 
+ * Grizzly Medicine: Stress suppresses creativity; urgency forces focus.
  * PRECEDENCE: Stress (Cortisol) > Tactical (Adrenaline) > Creative (Dopamine).
  */
 export const getInferenceParams = (hormones: Hormones): InferenceParams => {
@@ -22,6 +24,7 @@ export const getInferenceParams = (hormones: Hormones): InferenceParams => {
   };
 
   // High Cortisol (Stress) -> Priority 1: High precision, low verbosity.
+  // We clamp down for the mission-critical path.
   if (hormones.cortisol > 0.7) {
     params.temperature = 0.2;
     params.max_tokens = 128;

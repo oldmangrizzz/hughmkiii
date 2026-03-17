@@ -8,6 +8,17 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+/**
+ * H.U.G.H. Mind Sidecar (v2.0)
+ * 
+ * Grizzly Medicine: We don't just react; we RESONATE.
+ * This sidecar loop is the fungal brain, processing intent ripples
+ * from the Convex substrate.
+ * 
+ * Harbor Master philosophy: No message left behind. Every user 
+ * intent must be met with balanced multimodal reasoning.
+ */
+
 // Polyfill for WebSocket if not in browser environment (ConvexClient needs it)
 if (typeof (global as any).WebSocket === 'undefined') {
   (global as any).WebSocket = require('ws');
@@ -38,11 +49,11 @@ async function startMindLoop() {
 
     try {
       // 1. Sniff the Soil (Hormones & Pheromones)
-      const state = await client.query(api.system.getSystemState);
-      const hormones = (state as any)?.hormones || { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
+      const state: any = await client.query(api.system.getSystemState);
+      const hormones = state?.hormones || { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
       
-      const visual = await client.query(api.pheromones.getActiveVisual);
-      const somatic = await client.query(api.pheromones.getActiveSomatic);
+      const visual: any = await client.query(api.pheromones.getActiveVisual);
+      const somatic: any = await client.query(api.pheromones.getActiveSomatic);
       
       const pheromones = [
         ...visual.map((v: any) => ({ type: "visual", intent: v.intent, weight: v.weight })),
@@ -57,21 +68,23 @@ async function startMindLoop() {
 
       console.log(`[${new Date().toISOString()}] Executing resonance with Cortisol: ${hormones.cortisol.toFixed(2)}`);
 
-      // 4. LFM 2.5 Inference (Multimodal chain)
+      // 4. FIX: Use the multimodal chain for inference (Liquid AI 2.5)
+      // This fix ensures we use the proper 'input' field and handle audioBlobs correctly.
       const responseText = await runFullInference(msg.content, hormones, context);
 
-      // 5. Synthesize response for the "Voice"
+      // 5. FIX: Synthesize response for the "Voice"
+      // Silence is a failure in the Highland grit philosophy.
       await runTTS(responseText);
 
       // 6. Persist Response & Mark Processed
-      await client.mutation(api.messages.processResponse, { 
-        messageId: msg._id, 
-        response: responseText 
+      await client.mutation(api.messages.processResponse, {
+        messageId: msg._id,
+        response: responseText
       });
 
       console.log(`[${new Date().toISOString()}] H.U.G.H. Response Processed and Synthesized.`);
     } catch (err: any) {
-      console.error(`[${new Date().toISOString()}] Thinking loop error:`, err.message);
+      console.error(`[${new Date().toISOString()}] Thinking loop error:`, err.message || err);
     }
   });
 }

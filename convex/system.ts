@@ -2,6 +2,12 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
+/**
+ * H.U.G.H. System State Management.
+ * 
+ * Grizzly Medicine: Baseline hormones return linearly every 60s pulse.
+ * This is the physiological heartbeat of the sidecar.
+ */
 export const getSystemState = query({
   handler: async (ctx) => {
     return await ctx.db.query("system_state").first();

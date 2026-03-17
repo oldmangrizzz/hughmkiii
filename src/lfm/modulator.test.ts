@@ -1,6 +1,11 @@
 // src/lfm/modulator.test.ts
 import { getInferenceParams } from "./modulator";
 
+/**
+ * Hormonal Modulator Tests
+ * Verifies that H.U.G.H.'s synthetic endocrinology correctly shapes inference.
+ */
+
 describe("Hormonal Modulator", () => {
   it("should enforce high cortisol precision (Priority 1)", () => {
     const params = getInferenceParams({ cortisol: 0.8, dopamine: 0.2, adrenaline: 0.2 });

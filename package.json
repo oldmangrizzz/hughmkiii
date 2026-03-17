@@ -12,18 +12,18 @@
     "start:sidecar": "node dist/sidecar/index.js"
   },
   "dependencies": {
-    "@types/jest": "^30.0.0",
-    "@types/ws": "^8.18.1",
     "axios": "^1.13.6",
-    "axios-mock-adapter": "^2.1.0",
     "convex": "^1.33.1",
     "dotenv": "^17.3.1",
-    "jest": "^30.3.0",
-    "ts-jest": "^29.4.6",
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/ws": "^8.18.1",
+    "axios-mock-adapter": "^2.1.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   },
-  "description": ""
+  "description": "H.U.G.H. (Humanoid Unified Grizzly Harness) - Multimodal Nervous System (v2.0)"
 }
