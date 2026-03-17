@@ -1,17 +1,19 @@
 // src/sidecar/index.ts
 import { ConvexClient } from "convex/browser";
-import axios from "axios";
 import { api } from "../../convex/_generated/api";
 import { formatContext } from "./resonance";
 import { interleave } from "../interleaver/bridge";
-import { getInferenceParams } from "../lfm/modulator";
+import { runFullInference, runTTS } from "../lfm/lfmModelChain";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const CONVEX_URL = process.env.CONVEX_URL || "http://localhost:3210";
-const LFM_URL = process.env.LFM_URL || "http://localhost:8080/v1";
+// Polyfill for WebSocket if not in browser environment (ConvexClient needs it)
+if (typeof (global as any).WebSocket === 'undefined') {
+  (global as any).WebSocket = require('ws');
+}
 
+const CONVEX_URL = process.env.CONVEX_URL || "http://localhost:3210";
 const client = new ConvexClient(CONVEX_URL);
 
 // Heartbeat to detect subscription health
@@ -37,7 +39,7 @@ async function startMindLoop() {
     try {
       // 1. Sniff the Soil (Hormones & Pheromones)
       const state = await client.query(api.system.getSystemState);
-      const hormones = state?.hormones || { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
+      const hormones = (state as any)?.hormones || { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
       
       const visual = await client.query(api.pheromones.getActiveVisual);
       const somatic = await client.query(api.pheromones.getActiveSomatic);
@@ -50,31 +52,24 @@ async function startMindLoop() {
       // 2. Interleave Memory & Knowledge
       const holographicCtx = await interleave(msg.content, hormones, pheromones as any);
       
-      // 3. Assemble Prompt & Parameters
-      const prompt = formatContext(holographicCtx);
-      const params = getInferenceParams(hormones);
+      // 3. Assemble Prompt & Context
+      const context = formatContext(holographicCtx);
 
       console.log(`[${new Date().toISOString()}] Executing resonance with Cortisol: ${hormones.cortisol.toFixed(2)}`);
 
-      // 4. LFM 2.5 Inference
-      const response = await axios.post(`${LFM_URL}/chat/completions`, {
-        model: "lfm-2.5",
-        messages: [
-          { role: "system", content: prompt },
-          { role: "user", content: msg.content }
-        ],
-        ...params
-      });
+      // 4. LFM 2.5 Inference (Multimodal chain)
+      const responseText = await runFullInference(msg.content, hormones, context);
 
-      const assistantText = response.data.choices[0].message.content;
+      // 5. Synthesize response for the "Voice"
+      await runTTS(responseText);
 
-      // 5. Persist Response & Mark Processed
+      // 6. Persist Response & Mark Processed
       await client.mutation(api.messages.processResponse, { 
         messageId: msg._id, 
-        response: assistantText 
+        response: responseText 
       });
 
-      console.log(`[${new Date().toISOString()}] H.U.G.H. Response Processed.`);
+      console.log(`[${new Date().toISOString()}] H.U.G.H. Response Processed and Synthesized.`);
     } catch (err: any) {
       console.error(`[${new Date().toISOString()}] Thinking loop error:`, err.message);
     }

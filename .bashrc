@@ -18,3 +18,4 @@
 # alias cp='cp -i'
 # alias mv='mv -i'
 export TERM='xterm-256color'
+alias hugh='node /root/src/sidecar/cli.js'

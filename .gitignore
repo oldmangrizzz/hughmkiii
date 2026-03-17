@@ -10,3 +10,6 @@ worktrees
 .gemini/google_accounts.json
 .config/gh/hosts.yml
 .gemini/tmp/
+*.wav
+*.mp3
+.hugh/anchor.yaml
