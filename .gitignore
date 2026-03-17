@@ -8,11 +8,14 @@ node_modules
 worktrees
 .gemini/oauth_creds.json
 .gemini/google_accounts.json
+<<<<<<< HEAD
 .gemini/oauth_creds.json
 .gemini/google_accounts.json
 .env
 .gemini/oauth_creds.json
 .gemini/google_accounts.json
+=======
+>>>>>>> feature/phase-1-soil-clean
 .env
 .config/gh/hosts.yml
 .gemini/tmp/
