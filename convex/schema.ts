@@ -93,4 +93,11 @@ export default defineSchema({
     accepted: v.boolean(),
     reason: v.optional(v.string()),
   }),
+
+  messages: defineTable({
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    timestamp: v.number(),
+    processed: v.boolean(),
+  }).index("by_processed", ["processed", "timestamp"]),
 });
