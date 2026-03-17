@@ -7,16 +7,16 @@ import { api } from "../../../convex/_generated/api";
 
 /**
  * MapPortal: H.U.G.H.'s spatial eye.
- * 
+ *
  * Grizzly Medicine: A guardian without eyes is just a shield.
  * MapPortal provides the spatial topology needed for full-spectrum defense.
- * We chose the Mapbox Optic Nerve bridge for ATAK 2.0 because 
- * real-time visual pheromones are the only way H.U.G.H. can 
+ * We chose the Mapbox Optic Nerve bridge for ATAK 2.0 because
+ * real-time visual pheromones are the only way H.U.G.H. can
  * truly reason over the lab's infrastructure.
- * 
- * Harbor Master Philosophy: The map is not just for viewing; it's a 
- * functional layer for H.U.G.H.'s vision model. Snapshotting 
- * the WebGL context ensures we can feed 3D spatial reality 
+ *
+ * Harbor Master Philosophy: The map is not just for viewing; it's a
+ * functional layer for H.U.G.H.'s vision model. Snapshotting
+ * the WebGL context ensures we can feed 3D spatial reality
  * directly into the LFM brain.
  */
 export const MapPortal: React.FC = () => {
@@ -28,8 +28,8 @@ export const MapPortal: React.FC = () => {
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
 
-    mapboxgl.accessToken = process.env.MAPBOX_TOKEN!;
-    
+    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
@@ -42,7 +42,6 @@ export const MapPortal: React.FC = () => {
     });
 
     map.current.on('style.load', () => {
-      // Add 3D building layer for that "Holographic" feel
       map.current?.addLayer({
         'id': '3d-buildings',
         'source': 'composite',
@@ -68,34 +67,32 @@ export const MapPortal: React.FC = () => {
   const triggerOpticNerve = async () => {
     if (!map.current) return;
     setIsEvaluating(true);
-    
+
     try {
-      // 1. Snapshot the topology
       const canvas = map.current.getCanvas();
       const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-      
-      // 2. Get spatial context (bounding box)
+
       const bounds = map.current.getBounds();
       const center = map.current.getCenter();
+      void bounds;
 
       console.log(`👁️ Optic Nerve: Emitting topology snapshot at ${center.lat}, ${center.lng}`);
 
-      // 3. Drop into the Convex Substrate for H.U.G.H.'s Vision Model
       await emitVisual({
         intent: "spatial_search",
         position: { x: center.lng, y: center.lat, z: map.current.getZoom() },
-        size: { width: 1.0, height: 1.0 }, // Full viewport weight
+        size: { width: 1.0, height: 1.0 },
         weight: 1.0,
-        content: { type: "media", url: base64Image }, // Inject base64 into the media payload
-        ttlMs: 30000, // 30 seconds for H.U.G.H. to reason over it
+        content: { type: "media", url: base64Image },
+        ttlMs: 30000,
         emitterId: "operator-map-portal",
         emitterSignature: "omni-canvas-client-dev"
       });
-      
+
     } catch (err) {
       console.error("❌ Optic Nerve Failure:", err);
     } finally {
-      setTimeout(() => setIsEvaluating(false), 1000); // UI feedback delay
+      setTimeout(() => setIsEvaluating(false), 1000);
     }
   };
 
@@ -117,13 +114,13 @@ export const MapPortal: React.FC = () => {
       flexDirection: 'column'
     }}>
       <div ref={mapContainer} style={{ flex: 1, width: '100%' }} />
-      
-      <div style={{ 
-        position: 'absolute', 
-        top: '10px', 
-        left: '10px', 
-        color: '#fff', 
-        fontSize: '10px', 
+
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        color: '#fff',
+        fontSize: '10px',
         letterSpacing: '1px',
         textShadow: '0 0 5px #000',
         pointerEvents: 'none'
@@ -131,9 +128,8 @@ export const MapPortal: React.FC = () => {
         SPATIAL_TOPOLOGY_VIEW
       </div>
 
-      {/* The Optic Nerve Trigger */}
       <div style={{ padding: '10px', background: 'rgba(0,0,0,0.8)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-        <button 
+        <button
           onClick={triggerOpticNerve}
           disabled={isEvaluating}
           style={{

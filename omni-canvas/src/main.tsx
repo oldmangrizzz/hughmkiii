@@ -1,0 +1,14 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { OmniCanvas } from './components/OmniCanvas'
+
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <ConvexProvider client={convex}>
+      <OmniCanvas />
+    </ConvexProvider>
+  </React.StrictMode>
+)

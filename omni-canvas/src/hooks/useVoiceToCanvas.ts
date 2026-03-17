@@ -6,13 +6,13 @@ import { api } from "../../../convex/_generated/api";
 
 /**
  * useVoiceToCanvas: H.U.G.H.'s auditory nerve.
- * 
+ *
  * Grizzly Medicine: We don't just capture bytes; we capture intent.
- * The Harbor Master philosophy dictates that every vocal ripple must 
- * trigger a corresponding surge in the sidecar thinking loop. 
+ * The Harbor Master philosophy dictates that every vocal ripple must
+ * trigger a corresponding surge in the sidecar thinking loop.
  * If the operator speaks, the system must reason.
- * 
- * We use WebGPU-accelerated Clifford Attractors in the visual layer 
+ *
+ * We use WebGPU-accelerated Clifford Attractors in the visual layer
  * (handled elsewhere) to ensure engram persistence, but it starts here
  * with the raw Highland grit of a voice command.
  */
@@ -50,9 +50,8 @@ export const useVoiceToCanvas = () => {
 
   const runFullChain = async (audioBlob: Blob) => {
     console.log("🚀 Running OmniCanvas Inference Chain...");
-    
+
     return new Promise<void>((resolve, reject) => {
-      // Convert blob to base64 for transmission
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
@@ -60,9 +59,8 @@ export const useVoiceToCanvas = () => {
 
         try {
           // FIX: Ensuring LFM_URL doesn't have double /v1
-          const baseUrl = process.env.LFM_URL!.endsWith('/v1') 
-            ? process.env.LFM_URL 
-            : `${process.env.LFM_URL}/v1`;
+          const lfmUrl = import.meta.env.VITE_LFM_URL as string;
+          const baseUrl = lfmUrl.endsWith('/v1') ? lfmUrl : `${lfmUrl}/v1`;
 
           const response = await axios.post(`${baseUrl}/audio/completions`, {
             model: "lfm-2.5-audio",
@@ -75,11 +73,11 @@ export const useVoiceToCanvas = () => {
           console.log("🧠 Inference Result:", result);
 
           // FIX: Verify Mapbox state if intent is spatial
-          if (result.intent === 'spatial_search' && !process.env.MAPBOX_TOKEN) {
+          if (result.intent === 'spatial_search' && !import.meta.env.VITE_MAPBOX_TOKEN) {
             console.warn("🗺️ Mapbox Token missing. Spatial rendering will be degraded.");
           }
 
-          // FUNGAL FIX: Trigger the sidecar thinking loop by sending the transcription to messages
+          // FUNGAL FIX: Trigger the sidecar thinking loop via messages
           await sendMessage({
             content: result.transcription,
             role: "user"
@@ -91,15 +89,13 @@ export const useVoiceToCanvas = () => {
             intent: result.intent,
             transcription: result.transcription,
             confidence: result.confidence,
-            position: { x: 0.5, y: 0.5, z: 0.0 }, // Central focus
+            position: { x: 0.5, y: 0.5, z: 0.0 },
             weight: 1.0,
             ttlMs: 5000,
             emitterSignature: "omni-canvas-client-dev",
             emitterId: "operator-voice-portal"
           });
 
-          // SOMATIC FEEDBACK: Emit pheromone for successful inference
-          // This closes the "HOTLDashboard empty" bug by ensuring data flows.
           console.log("🦋 Emitting somatic pulse for successful inference...");
           resolve();
         } catch (err) {

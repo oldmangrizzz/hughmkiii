@@ -15,14 +15,17 @@ export class DigitalPsyche {
     lfmInference: false
   };
 
-  constructor(private convexUrl: string = process.env.CONVEX_URL || "", private lfmUrl: string = process.env.LFM_URL || "") {}
+  constructor(
+    private convexUrl: string = import.meta.env.VITE_CONVEX_URL ?? "",
+    private lfmUrl: string    = import.meta.env.VITE_LFM_URL ?? ""
+  ) {}
 
   /**
    * Fungal Probing: Actively "secretes" enzymes to find network gaps.
    */
   async bindNetwork() {
     console.log("🍄 Digital Psyche: Fungal State active. Probing for connections...");
-    
+
     // 1. Probe for Soul Anchor (Identity Gate)
     try {
       const response = await fetch("/api/identity/verify");
@@ -41,12 +44,12 @@ export class DigitalPsyche {
   }
 
   /**
-   * Grow: The fungal expansion phase. Retries with exponential backoff 
+   * Grow: The fungal expansion phase. Retries with exponential backoff
    * until specific "nutrient" endpoints (LFM, Convex) are found.
    */
   private async grow() {
-    const lfmTarget = this.lfmUrl || process.env.LFM_URL;
-    const convexTarget = this.convexUrl || process.env.CONVEX_URL;
+    const lfmTarget    = this.lfmUrl;
+    const convexTarget = this.convexUrl;
 
     const nutrientProbe = async (url: string | undefined, type: 'lfm' | 'convex', maxRetries = 5) => {
       if (!url) return;
@@ -62,8 +65,7 @@ export class DigitalPsyche {
               return;
             }
           } else if (type === 'convex') {
-            // Convex Substrate Binding
-            new ConvexClient(url); 
+            new ConvexClient(url);
             this.connections.convex = true;
             console.log(`🔗 Mycelium: Convex Substrate linked at ${url}.`);
             return;
