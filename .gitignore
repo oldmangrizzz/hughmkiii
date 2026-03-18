@@ -15,3 +15,20 @@ worktrees
 .hugh/anchor.yaml
 
 .env.local
+
+# Compiled artifacts — omni-canvas uses noEmit:true; these are stale tsc output
+omni-canvas/src/**/*.js
+omni-canvas/src/**/*.js.map
+omni-canvas/src/**/*.d.ts
+omni-canvas/src/**/*.d.ts.map
+!omni-canvas/src/vite-env.d.ts
+
+# Root tsc dist (committed separately when deploying)
+dist/
+
+# Convex compiled artifacts — regenerate with npx convex dev
+convex/*.js
+convex/*.js.map
+convex/*.d.ts
+convex/*.d.ts.map
+!convex/_generated/
