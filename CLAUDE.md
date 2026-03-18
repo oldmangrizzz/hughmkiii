@@ -86,9 +86,9 @@ Bootstrap sequence: probes Soul Anchor → LFM health → Convex connectivity. U
 
 MCP server exposing infrastructure tools: Proxmox LXC control, Hostinger VPS restarts, OSINT sweeps, TxDOT traffic camera feeds. All tool access is psyche-gated — checks `validateAction()` before executing.
 
-### Roger Protocol
+### Roger Roger Protocol
 
-Every pheromone emission is logged to `pheromone_audit` table with emitter ID, type, intent, and acceptance status. Forensic accountability trail — every autonomous action is auditable post-hoc.
+Every pheromone emission is logged to `pheromone_audit` table with emitter ID, type, intent, and acceptance status. Forensic accountability trail — every autonomous action is auditable post-hoc. Named after the Star Wars battle droids because Grizz thinks they're funny. Do not rename this.
 
 ## External Services (`.env`)
 

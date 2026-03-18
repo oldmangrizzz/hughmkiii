@@ -5,7 +5,11 @@ import { api } from "../../../convex/_generated/api";
 import { DigitalPsyche } from '../middleware/mycelium';
 import { OmniChat } from './OmniChat';
 import { MapPortal } from './MapPortal';
+import { YoutubePortal } from './YoutubePortal';
+import { ImagePortal } from './ImagePortal';
+import { WebPortal } from './WebPortal';
 import { useWakeLock } from '../hooks/useWakeLock';
+import { useCliffordAttractor, getAttractorParams } from '../shaders/clifford';
 
 type Hormones = { cortisol: number; dopamine: number; adrenaline: number };
 
@@ -38,35 +42,17 @@ export const OmniCanvas: React.FC = () => {
   const isSleeping = status === 'asleep';
   const glowColor  = useMemo(() => getSomaticGlow(status, hormones), [status, hormones]);
 
+  // Bind the stigmergic network on mount
   useEffect(() => {
     psyche.bindNetwork();
-
-    // WebGPU Compute Shader Pipeline (Clifford Attractor)
-    // 100,000 Particles — "The Engram Substrate"
-    const initWebGPU = async () => {
-      if (!navigator.gpu) {
-        console.warn("⚠️ WebGPU not detected. Falling back to Canvas2D/WebGL.");
-        return;
-      }
-      const adapter = await navigator.gpu.requestAdapter();
-      const device  = await adapter?.requestDevice();
-      // ... [Shader logic to implement CLIFFORD_ATTRACTOR_SHADER] ...
-      void device;
-    };
-
-    initWebGPU();
   }, []);
 
-  // CLIFFORD ATTRACTOR STATE PARAMETERS (From Whitepaper)
-  const getAttractorParams = (intent: string) => {
-    switch (intent) {
-      case 'media_playback': return { a: 0.0,  b: 0.0,  c: 1.0,  d: 1.0  };
-      case 'text_display':   return { a: -1.7, b: 1.3,  c: -0.1, d: -1.2 };
-      case 'alert':          return { a: 2.0,  b: -1.8, c: 0.3,  d: 1.5  };
-      default:               return { a: -1.4, b: 1.6,  c: 1.0,  d: 0.7  };
-    }
-  };
-  void getAttractorParams; // will be wired to shader in next phase
+  // Derive current attractor intent from leading active visual pheromone
+  const activeIntent = (pheromones as Array<{ intent?: string }> | undefined)?.[0]?.intent ?? 'idle';
+  const attractorParams = useMemo(() => getAttractorParams(activeIntent), [activeIntent]);
+
+  // Live Vortex Field — 100K particle Clifford attractor on GPU
+  useCliffordAttractor(canvasRef, attractorParams, hormones);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', background: '#000', overflow: 'hidden' }}>
@@ -87,7 +73,12 @@ export const OmniCanvas: React.FC = () => {
       />
 
       {/* 1. The Living Vortex Field (WebGPU Canvas) */}
-      <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }} />
+      <canvas
+        ref={canvasRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
+        style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
+      />
 
       {/* 2. Crystallized Content Projection */}
       <div className="crystallization-layer" style={{ position: 'absolute', pointerEvents: 'none', zIndex: 2 }}>
@@ -137,6 +128,11 @@ export const OmniCanvas: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 10 }}>
         <MapPortal />
       </div>
+
+      {/* 3.5 Media Portals — spawned by HUGH tool calls */}
+      <YoutubePortal />
+      <ImagePortal />
+      <WebPortal />
 
       {/* iOS Wake Lock Fallback: 1×1 silent looping video keeps iOS screen alive */}
       <video

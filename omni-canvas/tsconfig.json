@@ -12,7 +12,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
-    "types": ["vite/client", "@webgpu/types"]
+    "types": ["vite/client", "@webgpu/types", "dom-speech-recognition"]
   },
   "include": ["src", "../convex/_generated"]
 }

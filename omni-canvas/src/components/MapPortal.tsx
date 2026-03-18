@@ -33,7 +33,7 @@ export const MapPortal: React.FC = () => {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-122.4194, 37.7749], // Placeholder: San Francisco
+      center: [-97.7431, 30.2672], // Austin, TX
       zoom: 12,
       pitch: 45,
       bearing: -17.6,

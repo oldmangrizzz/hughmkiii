@@ -4,8 +4,27 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { ConvexClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
+import { validateAction } from "../middleware/psyche";
 
 const execAsync = promisify(exec);
+
+// Polyfill for WebSocket if not in browser environment (ConvexClient needs it)
+if (typeof (global as any).WebSocket === 'undefined') {
+  (global as any).WebSocket = require('ws');
+}
+
+const CONVEX_URL = process.env.CONVEX_URL || "http://localhost:3210";
+const client = new ConvexClient(CONVEX_URL);
+
+/**
+ * Helper to get current hormones from the substrate.
+ */
+async function getCurrentHormones() {
+  const state: any = await client.query(api.system.getSystemState, {});
+  return state?.hormones || { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2 };
+}
 
 /**
  * H.U.G.H. MCP Harbor Master
@@ -67,14 +86,39 @@ server.tool(
   }
 );
 
-// 3. Lab Telemetry: Reading the "System State"
+// 3. Lab Telemetry: Reading real system state from Convex substrate
 server.tool(
   "get_lab_telemetry",
   {},
   async () => {
-    console.log("🚢 Harbor Master: Fetching Lab Telemetry...");
-    // Integration with Convex system_state would go here
-    return { content: [{ type: "text", text: "Lab Telemetry: Nominal. All Engine Nodes operational." }] };
+    console.log("🚢 Harbor Master: Fetching Lab Telemetry from Convex...");
+    try {
+      const state: any = await client.query(api.system.getSystemState, {});
+      const hormones = state?.hormones || {};
+      const summary = {
+        status: state?.status ?? "unknown",
+        hormones: {
+          cortisol: (hormones.cortisol ?? 0).toFixed(3),
+          dopamine: (hormones.dopamine ?? 0).toFixed(3),
+          adrenaline: (hormones.adrenaline ?? 0).toFixed(3),
+        },
+        triageLevel:
+          (hormones.cortisol ?? 0) > 0.7
+            ? "RED"
+            : (hormones.cortisol ?? 0) > 0.4
+              ? "YELLOW"
+              : "GREEN",
+        timestamp: new Date().toISOString(),
+      };
+      return {
+        content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
+      };
+    } catch (err: any) {
+      return {
+        content: [{ type: "text", text: `Telemetry Error: ${err.message}` }],
+        isError: true,
+      };
+    }
   }
 );
 
@@ -88,14 +132,81 @@ server.tool(
     query: z.string().optional().describe("Optional specific target (e.g., 'parking', 'protest', 'football')")
   },
   async ({ latitude, longitude, radius_km, query }) => {
+    const hormones = await getCurrentHormones();
+    const validation = await validateAction("gather_spatial_osint", hormones);
+    
+    if (!validation.accepted) {
+      console.warn(`🚢 Harbor Master: OSINT Vetoed. Reason: ${validation.reason}`);
+      return { 
+        content: [{ type: "text", text: `⚓ Harbor Master Veto: ${validation.reason}` }], 
+        isError: true 
+      };
+    }
+
     console.log(`👁️‍🗨️ OSINT: Sweeping ${radius_km}km radius around ${latitude}, ${longitude} for '${query || 'all activity'}'`);
-    // Placeholder for actual Reddit, Twitter, Facebook, and Event API (Ticketmaster/SeatGeek) hooks.
-    return { 
-      content: [{ 
-        type: "text", 
-        text: `OSINT Sweep complete. Correlated 4 high-signal events within ${radius_km}km. Event data ready for LFM synthesis.` 
-      }] 
-    };
+
+    try {
+      // Reddit public search — no OAuth required for public posts
+      const redditUrl = `https://www.reddit.com/search.json?q=${encodeURIComponent(
+        `${query || 'events'} near ${latitude},${longitude}`
+      )}&limit=10&sort=new&type=link`;
+      const redditResp = await execAsync(
+        `curl -s -A "HUGH-Harbor-Master/1.0" "${redditUrl}"`
+      );
+      const redditData = JSON.parse(redditResp.stdout);
+      const posts: Array<{
+        title: string;
+        subreddit: string;
+        score: number;
+        url: string;
+        created: string;
+      }> = redditData?.data?.children?.map((c: any) => ({
+        title: c.data.title,
+        subreddit: c.data.subreddit,
+        score: c.data.score,
+        url: c.data.url,
+        created: new Date(c.data.created_utc * 1000).toISOString()
+      })) || [];
+
+      // Overpass API for nearby places — OpenStreetMap, free, no key required
+      const overpassQuery = `[out:json][timeout:10];
+(
+  node["amenity"](around:${radius_km * 1000},${latitude},${longitude});
+  node["leisure"](around:${radius_km * 1000},${latitude},${longitude});
+  node["tourism"](around:${radius_km * 1000},${latitude},${longitude});
+);
+out body 20;`;
+      const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+      const overpassResp = await execAsync(`curl -s "${overpassUrl}"`);
+      const overpassData = JSON.parse(overpassResp.stdout);
+      const places: Array<{
+        name: string;
+        type: string | undefined;
+        lat: number;
+        lon: number;
+      }> = overpassData?.elements?.map((e: any) => ({
+        name: e.tags?.name || 'Unknown',
+        type: e.tags?.amenity || e.tags?.leisure || e.tags?.tourism,
+        lat: e.lat,
+        lon: e.lon
+      })).filter((p: any) => p.name !== 'Unknown') || [];
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            query,
+            center: { latitude, longitude },
+            radius_km,
+            timestamp: new Date().toISOString(),
+            reddit: { count: posts.length, posts },
+            places: { count: places.length, entries: places }
+          }, null, 2)
+        }]
+      };
+    } catch (err: any) {
+      return { content: [{ type: "text", text: `Error: ${err.message}` }], isError: true };
+    }
   }
 );
 
@@ -108,18 +219,56 @@ server.tool(
     radius_km: z.number().default(2)
   },
   async ({ latitude, longitude, radius_km }) => {
+    const hormones = await getCurrentHormones();
+    const validation = await validateAction("fetch_traffic_camera", hormones);
+
+    if (!validation.accepted) {
+      console.warn(`🚢 Harbor Master: Camera Fetch Vetoed. Reason: ${validation.reason}`);
+      return { 
+        content: [{ type: "text", text: `⚓ Harbor Master Veto: ${validation.reason}` }], 
+        isError: true 
+      };
+    }
+
     console.log(`📷 TxDOT/Traffic: Fetching camera feeds within ${radius_km}km of ${latitude}, ${longitude}`);
-    // Placeholder for API integration with TxDOT or local municipal camera feeds.
-    // In production, this returns base64 images to be injected into the Convex substrate as visual_pheromones.
-    return { 
-      content: [{ 
-        type: "text", 
-        text: `Fetched 3 live camera frames from bounding box. Injecting into Optic Nerve for LFM Vision reasoning.` 
-      }] 
-    };
+
+    try {
+      // TxDOT CCTV REST API — Socrata OData endpoint, no key required
+      const radius_m = radius_km * 1000;
+      const txdotUrl = `https://data.txdot.gov/resource/i38h-aqem.json?$where=within_circle(point,${latitude},${longitude},${radius_m})&$limit=10`;
+      const resp = await execAsync(`curl -s "${txdotUrl}"`);
+      const cameras: any[] = JSON.parse(resp.stdout);
+
+      const cameraList = cameras.map((cam: any) => ({
+        id: cam.camera_id || cam.objectid,
+        name: cam.camera_name || cam.roadway,
+        location: {
+          lat: parseFloat(cam.point?.coordinates?.[1] || cam.latitude || '0'),
+          lon: parseFloat(cam.point?.coordinates?.[0] || cam.longitude || '0')
+        },
+        url: cam.video_url || cam.snapshot_url || null,
+        status: cam.status || 'unknown'
+      }));
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            center: { latitude, longitude },
+            radius_km,
+            timestamp: new Date().toISOString(),
+            cameras: { count: cameraList.length, entries: cameraList }
+          }, null, 2)
+        }]
+      };
+    } catch (err: any) {
+      return { content: [{ type: "text", text: `Error: ${err.message}` }], isError: true };
+    }
   }
 );
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.log("⚓ H.U.G.H. Harbor Master MCP Server online.");
+(async () => {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.log("⚓ H.U.G.H. Harbor Master MCP Server online.");
+})();

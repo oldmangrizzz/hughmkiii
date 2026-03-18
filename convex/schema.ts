@@ -12,7 +12,11 @@ export const contentPayload = v.union(
   v.object({ type: v.literal("media"), url: v.string() }),
   v.object({ type: v.literal("text"), body: v.string() }),
   v.object({ type: v.literal("dashboard"), layout: v.string() }),
-  v.object({ type: v.literal("control"), action: v.string() })
+  v.object({ type: v.literal("control"), action: v.string() }),
+  // Media richness — populated by HUGH tool calls
+  v.object({ type: v.literal("image"), url: v.string(), prompt: v.string() }),
+  v.object({ type: v.literal("youtube"), videoId: v.string(), title: v.string() }),
+  v.object({ type: v.literal("webpage"), url: v.string(), title: v.string(), summary: v.string() })
 );
 
 export const visualIntent = v.union(
@@ -99,6 +103,7 @@ export default defineSchema({
     content: v.string(),
     timestamp: v.number(),
     processed: v.boolean(),
+    audioData: v.optional(v.string()), // base64 MP3 from TTS — played by the browser
   }).index("by_processed", ["processed", "timestamp"]),
 
   agent_registry: defineTable({

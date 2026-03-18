@@ -13,3 +13,5 @@ worktrees
 *.wav
 *.mp3
 .hugh/anchor.yaml
+
+.env.local

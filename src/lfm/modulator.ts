@@ -16,18 +16,20 @@ export interface InferenceParams {
  * PRECEDENCE: Stress (Cortisol) > Tactical (Adrenaline) > Creative (Dopamine).
  */
 export const getInferenceParams = (hormones: Hormones): InferenceParams => {
+  // LFM 2.5-thinking: <think>...</think> tokens count against max_tokens in llama.cpp.
+  // Thinking model uses 500-900 tokens for reasoning + ~300 for the actual response.
+  // 2048-token context: system(~450) + user(~50) = ~500 input → 1548 output headroom.
   let params: InferenceParams = {
     temperature: 0.7,
     top_p: 0.9,
-    max_tokens: 512,
+    max_tokens: 1500,
     repetition_penalty: 1.1
   };
 
-  // High Cortisol (Stress) -> Priority 1: High precision, low verbosity.
-  // We clamp down for the mission-critical path.
+  // High Cortisol (Stress) -> Priority 1: High precision, lower verbosity.
   if (hormones.cortisol > 0.7) {
     params.temperature = 0.2;
-    params.max_tokens = 128;
+    params.max_tokens = 900;
   } 
   
   // High Adrenaline (Urgency) -> Priority 2: Tactical snap and reduced repetition.
