@@ -5,6 +5,7 @@ import { formatContext } from "./resonance";
 import { interleave, consolidateMemory } from "../interleaver/bridge";
 import { runFullInference, runTTS } from "../lfm/lfmModelChain";
 import { validateAction } from "../middleware/psyche";
+import { startSomaticMonitor } from "./somatic-monitor";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -43,6 +44,10 @@ let isProcessing = false;
  */
 async function startMindLoop() {
   console.log("H.U.G.H. Mind Sidecar active. Listening for user messages...");
+
+  // Somatic presence — this node monitors itself and writes hardware telemetry
+  // to the Convex substrate so every other HUGH instance can feel this body.
+  startSomaticMonitor(client);
 
   client.onUpdate(api.messages.getLatestUnprocessed, {}, async (msg) => {
     if (!msg || isProcessing) return;
