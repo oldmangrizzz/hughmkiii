@@ -2,7 +2,7 @@
 import { ConvexClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
 import { formatContext } from "./resonance";
-import { interleave } from "../interleaver/bridge";
+import { interleave, consolidateMemory } from "../interleaver/bridge";
 import { runFullInference, runTTS } from "../lfm/lfmModelChain";
 import { validateAction } from "../middleware/psyche";
 import * as dotenv from "dotenv";
@@ -134,6 +134,9 @@ async function startMindLoop() {
         audioData
       });
       await client.mutation(api.system.updateStatus, { status: "waking" });
+
+      // 8. Memory consolidation — drip exchange to MemGPT (non-blocking, fails gracefully)
+      consolidateMemory(msg.content, responseText).catch(() => {});
 
       console.log(`[${new Date().toISOString()}] H.U.G.H. Response synthesized and persisted.`);
     } catch (err: any) {
