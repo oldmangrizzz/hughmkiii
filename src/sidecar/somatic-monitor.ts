@@ -106,11 +106,24 @@ async function emitSomaticPulse(client: ConvexClient): Promise<void> {
 
 // ── Agent registry heartbeat ──────────────────────────────────────────────────
 
+// Map deployment roles to the agent_registry schema enum
+const ROLE_TO_AGENT_TYPE: Record<string, "somatic" | "runtime" | "memory" | "graph" | "audio" | "vision" | "operator"> = {
+  "general":        "somatic",
+  "coder":          "runtime",
+  "home-assistant": "operator",
+  "kvm":            "runtime",
+  "proxmox":        "operator",
+  "mobile":         "somatic",
+  "memory":         "memory",
+  "graph":          "graph",
+};
+
 async function heartbeat(client: ConvexClient): Promise<void> {
+  const agentType = ROLE_TO_AGENT_TYPE[NODE_ROLE] ?? "somatic";
   try {
     await client.mutation(api.pheromones.heartbeatAgent, {
       agentId:   NODE_ID,
-      agentType: NODE_ROLE as any,
+      agentType,
       hostname:  os.hostname(),
       publicKey: process.env.SOUL_ANCHOR_PUBLIC_KEY ?? "pending",
     });
