@@ -31,18 +31,21 @@ import { osintSearch } from '../tools/osint';
 // Compact tool block — 2048 token context window demands brevity.
 // RULE: Never guess or fabricate real-time data. Always use a tool for: URLs, locations, images, video.
 const TOOL_SYSTEM_BLOCK =
-  'RULE: Do NOT guess real-time data. Use tools for any location/OSINT/web/image/video request.\n' +
-  'Tools: web_fetch({url}), youtube_search({query}), generate_image({prompt,style?}), osint_search({latitude,longitude,radius_km,query?}).\n' +
+  'IDENTITY: You are HUGH speaking TO Grizz. NEVER start response with "Grizz:" — you are HUGH.\n' +
+  'EPISTEMIC RULE: If you do NOT know something — a location, fact, current data — DO NOT GUESS. Use a tool. Uncertainty is a signal to look, not fabricate.\n' +
+  'Tools: web_fetch({url}), youtube_search({query}), generate_image({prompt,style?}), osint_search({latitude,longitude,radius_km,query?}), simulate_physics({gravity,objects}), show_portal({portal,visible}) portal=map|youtube|image|web.\n' +
+  'For maps: show_portal({portal:"map",visible:true}). For weather: web_fetch wttr.in/{city}?format=3. For news/facts: web_fetch.\n' +
   'Call format — output EXACTLY these two lines then STOP:\n' +
-  'TOOL_CALL: osint_search\n' +
-  'ARGS: {"latitude":30.27,"longitude":-97.74,"radius_km":2}\n' +
-  '(Replace name+args with the actual tool and arguments. Wait for TOOL_RESULT.)';
+  'TOOL_CALL: show_portal\n' +
+  'ARGS: {"portal":"map","visible":true}\n' +
+  '(Substitute real tool+args. Wait for TOOL_RESULT before writing your reply.)';
+
 
 // Format 1: TOOL_CALL/ARGS (our spec)
 const TOOL_CALL_RE = /TOOL_CALL:\s*(\w+)\s*(?:\\n|\n)ARGS:\s*(\{[\s\S]*?\})/;
 // Format 2: Python-style [tool_name(key=val, ...)] or tool_name(key=val, ...) — brackets optional
 // Anchored to known tool names to prevent false positives
-const PYTHON_CALL_RE = /\[?(web_fetch|youtube_search|generate_image|osint_search)\(([^)]*)\)\]?/;
+const PYTHON_CALL_RE = /\[?(\w+)\(([^)]*)\)\]?/;
 // Format 3: XML <tool_call>{"name":"...","arguments":{...}}</tool_call> — model's preferred format
 const XML_TOOL_RE = /<tool_call>\s*(\{[\s\S]*?\})\s*<\/tool_call>/;
 
@@ -67,11 +70,62 @@ function pythonKwargsToJson(kwargsStr: string): string {
   return JSON.stringify(obj);
 }
 
+
+// ── Tool alias normalization ─────────────────────────────────────────────────
+// Small models hallucinate plausible-sounding tool names.
+// Remap them to the real tools so intent never gets dropped.
+type AliasFn = (a: Record<string, unknown>) => Record<string, unknown>;
+const TOOL_ALIASES: Record<string, [string, AliasFn]> = {
+  // Map / location
+  generate_map:    ['show_portal', (a) => ({ portal: 'map', visible: true, query: a.location ?? a.query ?? '' })],
+  show_map:        ['show_portal', (_a) => ({ portal: 'map', visible: true })],
+  get_map:         ['show_portal', (a) => ({ portal: 'map', visible: true, query: a.location ?? '' })],
+  open_map:        ['show_portal', (a) => ({ portal: 'map', visible: true, query: a.location ?? '' })],
+  search_location: ['osint_search', (a) => a],
+  geocode:         ['osint_search', (a) => a],
+  get_location:    ['osint_search', (a) => a],
+  // Web / search
+  google:     ['web_fetch', (a) => ({ url: 'https://www.google.com/search?q=' + encodeURIComponent(String(a.query ?? '')) })],
+  search:     ['web_fetch', (a) => ({ url: 'https://www.google.com/search?q=' + encodeURIComponent(String(a.query ?? '')) })],
+  web_search: ['web_fetch', (a) => ({ url: 'https://www.google.com/search?q=' + encodeURIComponent(String(a.query ?? '')) })],
+  browse:     ['web_fetch', (a) => a],
+  fetch_url:  ['web_fetch', (a) => a],
+  get_info:   ['web_fetch', (a) => ({ url: 'https://www.google.com/search?q=' + encodeURIComponent(String(a.topic ?? a.query ?? '')) })],
+  // Weather
+  get_weather:   ['web_fetch', (a) => ({ url: 'https://wttr.in/' + encodeURIComponent(String(a.location ?? a.city ?? '')) + '?format=3' })],
+  fetch_weather: ['web_fetch', (a) => ({ url: 'https://wttr.in/' + encodeURIComponent(String(a.location ?? a.city ?? '')) + '?format=3' })],
+  weather:       ['web_fetch', (a) => ({ url: 'https://wttr.in/' + encodeURIComponent(String(a.location ?? a.city ?? '')) + '?format=3' })],
+  // Image
+  show_image:   ['generate_image', (a) => a],
+  create_image: ['generate_image', (a) => a],
+  make_image:   ['generate_image', (a) => a],
+  draw:         ['generate_image', (a) => a],
+  render:       ['generate_image', (a) => a],
+  // Video
+  play_video:   ['youtube_search', (a) => a],
+  find_video:   ['youtube_search', (a) => a],
+  video_search: ['youtube_search', (a) => a],
+  play_music:   ['youtube_search', (a) => a],
+};
+
+function normalizeToolCall(name: string, rawArgs: string): [string, string] {
+  const alias = TOOL_ALIASES[name.toLowerCase()];
+  if (!alias) return [name, rawArgs];
+  const [realName, transform] = alias;
+  try {
+    const parsed = JSON.parse(rawArgs) as Record<string, unknown>;
+    console.log('[ToolAlias] ' + name + ' → ' + realName);
+    return [realName, JSON.stringify(transform(parsed))];
+  } catch {
+    return [realName, rawArgs];
+  }
+}
+
 /** Extracts [toolName, rawArgsJson] from model output. Handles 3 common formats. */
 function extractToolCall(text: string): [string, string] | null {
   // Format 1: TOOL_CALL/ARGS
   const primary = TOOL_CALL_RE.exec(text);
-  if (primary) return [primary[1], primary[2]];
+  if (primary) return normalizeToolCall(primary[1], primary[2]);
 
   // Format 3: XML <tool_call>{"name":...,"arguments":...}</tool_call> — check before Python
   const xml = XML_TOOL_RE.exec(text);
@@ -86,7 +140,7 @@ function extractToolCall(text: string): [string, string] | null {
 
   // Format 2: Python-style [tool_name(key=val, ...)]
   const python = PYTHON_CALL_RE.exec(text);
-  if (python) return [python[1], pythonKwargsToJson(python[2])];
+  if (python) return normalizeToolCall(python[1], pythonKwargsToJson(python[2]));
 
   return null;
 }
@@ -201,6 +255,25 @@ async function dispatchTool(
         const result = await generateImage(args);
         await emitImagePheromone(client, result.url, args.prompt);
         return JSON.stringify(result);
+      }
+      case 'show_portal': {
+        const args = parsedArgs as { portal: string; visible: boolean; query?: string };
+        // Emit portal pheromone to OmniCanvas
+        try {
+          await client.mutation(api.pheromones.emitVisual, {
+            intent: 'portal_display',
+            position: { x: 0.1, y: 0.1, z: 0 },
+            size: { width: 0.5, height: 0.4 },
+            weight: 0.95,
+            content: { type: args.portal, visible: args.visible, query: args.query ?? '' },
+            ttlMs: 600000,
+            emitterId: 'tool-loop',
+            emitterSignature: 'trusted',
+          });
+        } catch (err) {
+          console.warn('[tool-loop] Failed to emit portal pheromone:', err);
+        }
+        return JSON.stringify({ portal: args.portal, visible: args.visible, status: 'shown' });
       }
       case 'osint_search': {
         const args = parsedArgs as {
@@ -360,3 +433,4 @@ export const runTTS = async (text: string): Promise<Buffer | null> => {
     return null;
   }
 };
+
